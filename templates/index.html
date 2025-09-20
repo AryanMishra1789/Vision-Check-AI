@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision Check AI</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .screen {
+            display: none;
+            margin: 20px 0;
+        }
+        .screen.active {
+            display: block;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        #video-container {
+            position: relative;
+            width: 640px;
+            margin: 20px auto;
+        }
+        #video-feed {
+            width: 100%;
+            border-radius: 8px;
+            display: block;
+        }
+        #chart-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        #snellen-line {
+            font-weight: bold;
+            letter-spacing: 6px;
+            margin: 20px 0;
+            min-height: 60px;
+            text-align: center;
+            width: 100%;
+        }
+        
+        /* Dynamic font sizes for different Snellen lines */
+        .snellen-200 { font-size: 120px; }
+        .snellen-100 { font-size: 100px; }
+        .snellen-70 { font-size: 80px; }
+        .snellen-50 { font-size: 60px; }
+        .snellen-40 { font-size: 48px; }
+        .snellen-30 { font-size: 40px; }
+        .snellen-25 { font-size: 36px; }
+        .snellen-20 { font-size: 32px; }
+        .snellen-15 { font-size: 28px; }
+        .acuity {
+            font-size: 24px;
+            color: #7f8c8d;
+            margin: 10px 0;
+        }
+        .input-group {
+            margin: 20px 0;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .input-group-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+            justify-content: center;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            width: 300px;
+            margin-right: 0;
+        }
+        .voice-btn {
+            background-color: #34a853;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.3s;
+        }
+        .voice-btn:hover {
+            background-color: #2d8e47;
+        }
+        .voice-btn.listening {
+            background-color: #ea4335;
+            animation: pulse 1.5s infinite;
+        }
+        .voice-status {
+            min-height: 24px;
+            margin-top: 5px;
+            color: #666;
+            font-size: 14px;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #e8f4f8;
+            text-align: center;
+        }
+        .correct {
+            color: #27ae60;
+        }
+        .incorrect {
+            color: #e74c3c;
+        }
+        .disclaimer {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 5px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Vision Check AI</h1>
+        <p class="subtitle">An accessible vision screening tool</p>
+
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="screen active">
+            <h2>Welcome to Vision Check AI</h2>
+            <p>This tool provides a preliminary vision screening using your device's camera.</p>
+            
+            <div class="disclaimer">
+                <h3>Important Information</h3>
+                <p>This is not a substitute for a professional eye exam. The results are for informational purposes only.</p>
+                <p>For a comprehensive eye examination, please consult an eye care professional.</p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <button id="start-btn" onclick="alert('Button clicked!'); document.getElementById('welcome-screen').classList.remove('active'); document.getElementById('distance-screen').classList.add('active');">Start Vision Test</button>
+            </div>
+        </div>
+
+        <!-- Distance Check Screen -->
+        <div id="distance-screen" class="screen">
+            <h2>Step 1: Position Yourself</h2>
+            <p>Please position yourself approximately 10 feet (3 meters) from your screen.</p>
+            
+            <div id="video-container">
+                <img id="video-feed" src="{{ url_for('video_feed') }}" alt="Video feed">
+            </div>
+            
+            <p id="distance-message">Move closer or further until the indicator turns green</p>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button id="back-to-welcome" class="secondary-btn">Back</button>
+                <button id="continue-btn" disabled>Continue to Test</button>
+            </div>
+        </div>
+
+        <!-- Vision Test Screen -->
+        <div id="test-screen" class="screen">
+            <h2>Vision Test</h2>
+            <p>Read the letters from top to bottom, starting with the largest line.</p>
+            
+            <div id="chart-container">
+                <div id="level-info" style="font-size: 18px; font-weight: bold; margin: 10px 0; color: #2c3e50;"></div>
+                <div id="progress-bar" style="width: 100%; background-color: #e0e0e0; border-radius: 5px; margin: 10px 0;">
+                    <div id="progress" style="width: 0%; height: 10px; background-color: #3498db; border-radius: 5px; transition: width 0.3s;"></div>
+                </div>
+                <div id="snellen-line"></div>
+                <div id="acuity" class="acuity"></div>
+                <div id="test-progress" style="margin: 10px 0; color: #666; font-size: 14px;"></div>
+            </div>
+            
+            <div class="input-group">
+                <input type="text" id="response-input" placeholder="Type what you see..." autocomplete="off">
+                <button id="submit-btn">Submit</button>
+                <button id="voice-btn" class="voice-btn">
+                    <span id="voice-icon">🎤</span> Use Voice
+                </button>
+                <div id="voice-status" class="voice-status"></div>
+            </div>
+            
+            <div id="result-message" class="result"></div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button id="back-to-distance" class="secondary-btn">Back</button>
+                <button id="skip-btn">I can't read this line</button>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen" class="screen">
+            <h2>Test Results</h2>
+            
+            <div id="results-container" class="result">
+                <h3>Your estimated visual acuity is: <span id="final-acuity"></span></h3>
+                <div id="results-details"></div>
+            </div>
+            
+            <div class="disclaimer">
+                <h3>Important Notice</h3>
+                <p>This is a screening tool only and does not replace a comprehensive eye examination by a qualified eye care professional.</p>
+                <p>If you have any concerns about your vision, please consult an eye care professional.</p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button id="restart-btn">Take Test Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Test if JavaScript is running
+        console.log('Initializing Vision Check AI...');
+        
+        // Wait for the DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM fully loaded');
+            
+            // DOM Elements
+            const welcomeScreen = document.getElementById('welcome-screen');
+            const distanceScreen = document.getElementById('distance-screen');
+            const testScreen = document.getElementById('test-screen');
+            const resultsScreen = document.getElementById('results-screen');
+            const voiceBtn = document.getElementById('voice-btn');
+            const voiceIcon = document.getElementById('voice-icon');
+            const voiceStatus = document.getElementById('voice-status');
+            
+            // Debug log all elements
+            console.log('welcomeScreen:', welcomeScreen);
+            console.log('distanceScreen:', distanceScreen);
+            console.log('testScreen:', testScreen);
+            console.log('resultsScreen:', resultsScreen);
+            
+            // Initialize the application
+            initApp();
+        });
+        
+        function initApp() {
+            console.log('Initializing application...');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const distanceScreen = document.getElementById('distance-screen');
+        const testScreen = document.getElementById('test-screen');
+        const resultsScreen = document.getElementById('results-screen');
+        const voiceBtn = document.getElementById('voice-btn');
+        const voiceIcon = document.getElementById('voice-icon');
+        const voiceStatus = document.getElementById('voice-status');
+        
+        // Debug log all elements
+        console.log('welcomeScreen:', welcomeScreen);
+        console.log('distanceScreen:', distanceScreen);
+        console.log('testScreen:', testScreen);
+        console.log('resultsScreen:', resultsScreen);
+        
+        // Voice recognition setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        let isListening = false;
+        
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.trim().toUpperCase();
+                document.getElementById('response-input').value = transcript;
+                updateVoiceStatus(`Heard: "${transcript}"`);
+                
+                // Auto-submit if we have a response
+                if (transcript) {
+                    setTimeout(submitResponse, 500);
+                }
+            };
+            
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error', event.error);
+                stopVoiceRecognition();
+                updateVoiceStatus('Error: ' + (event.error || 'Unknown error occurred'));
+            };
+            
+            recognition.onend = () => {
+                if (isListening) {
+                    // If we're still supposed to be listening, restart recognition
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.error('Error restarting recognition:', e);
+                        stopVoiceRecognition();
+                    }
+                }
+            };
+        } else {
+            voiceBtn.style.display = 'none';
+            console.warn('Speech recognition not supported in this browser');
+        }
+        
+        function toggleVoiceRecognition() {
+            if (isListening) {
+                stopVoiceRecognition();
+            } else {
+                startVoiceRecognition();
+            }
+        }
+        
+        function startVoiceRecognition() {
+            if (!recognition) return;
+            
+            try {
+                recognition.start();
+                isListening = true;
+                voiceBtn.classList.add('listening');
+                voiceIcon.textContent = '🔴';
+                updateVoiceStatus('Listening... Speak now');
+            } catch (e) {
+                console.error('Error starting voice recognition:', e);
+                updateVoiceStatus('Error: Could not start voice recognition');
+            }
+        }
+        
+        function stopVoiceRecognition() {
+            if (!recognition) return;
+            
+            try {
+                recognition.stop();
+            } catch (e) {
+                console.error('Error stopping recognition:', e);
+            }
+            
+            isListening = false;
+            voiceBtn.classList.remove('listening');
+            voiceIcon.textContent = '🎤';
+            updateVoiceStatus('');
+        }
+        
+        function updateVoiceStatus(message) {
+            voiceStatus.textContent = message;
+            if (message) {
+                voiceStatus.style.opacity = '1';
+            } else {
+                voiceStatus.style.opacity = '0';
+            }
+        }
+        
+        const startBtn = document.getElementById('start-btn');
+        const continueBtn = document.getElementById('continue-btn');
+        const backToWelcome = document.getElementById('back-to-welcome');
+        const backToDistance = document.getElementById('back-to-distance');
+        const submitBtn = document.getElementById('submit-btn');
+        const skipBtn = document.getElementById('skip-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        
+        const responseInput = document.getElementById('response-input');
+        const snellenLine = document.getElementById('snellen-line');
+        const acuityDisplay = document.getElementById('acuity');
+        const resultMessage = document.getElementById('result-message');
+        const finalAcuity = document.getElementById('final-acuity');
+        const resultsDetails = document.getElementById('results-details');
+        
+        // Debug log button elements
+        console.log('startBtn:', startBtn);
+        console.log('continueBtn:', continueBtn);
+        console.log('backToWelcome:', backToWelcome);
+        console.log('submitBtn:', submitBtn);
+        
+        // Ensure the DOM is fully loaded before setting up event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM fully loaded');
+            // Re-initialize event listeners after DOM is loaded
+            setupEventListeners();
+        });
+        
+        function setupEventListeners() {
+            console.log('Setting up event listeners...');
+            if (startBtn) {
+                startBtn.addEventListener('click', function(e) {
+                    console.log('Start button clicked');
+                    showDistanceScreen();
+                });
+            } else {
+                console.error('Start button not found!');
+            }
+            
+            if (continueBtn) continueBtn.addEventListener('click', startVisionTest);
+            if (backToWelcome) backToWelcome.addEventListener('click', showWelcomeScreen);
+            if (backToDistance) backToDistance.addEventListener('click', showDistanceScreen);
+            if (submitBtn) submitBtn.addEventListener('click', submitResponse);
+            if (skipBtn) skipBtn.addEventListener('click', skipLine);
+            if (restartBtn) restartBtn.addEventListener('click', restartTest);
+            
+            if (responseInput) {
+                responseInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        submitResponse();
+                    }
+                });
+            }
+            
+            if (voiceBtn) {
+                voiceBtn.addEventListener('click', toggleVoiceRecognition);
+            }
+        }
+        
+        // Test state
+        let currentLine = 0;
+        let testResponses = [];
+        
+        // Define all screen-related functions first
+        function showWelcomeScreen() {
+            hideAllScreens();
+            welcomeScreen.classList.add('active');
+        }
+        
+        function showDistanceScreen() {
+            hideAllScreens();
+            distanceScreen.classList.add('active');
+            // Start checking distance again
+            distanceCheckInterval = setInterval(checkDistance, 1000);
+        }
+        
+        function startVisionTest() {
+            hideAllScreens();
+            testScreen.classList.add('active');
+            currentLine = 0;
+            testResponses = [];
+            loadNextLine();
+            responseInput.focus();
+        }
+        
+        // Stop voice recognition when leaving the test screen
+        function stopVoiceIfActive() {
+            if (isListening) {
+                stopVoiceRecognition();
+            }
+        }
+        
+        // Set up event listeners
+        setupEventListeners();
+        
+        // Check distance periodically
+        let distanceCheckInterval = setInterval(checkDistance, 1000);
+        
+        function showResults() {
+            hideAllScreens();
+            resultsScreen.classList.add('active');
+            
+            // Get results from server
+            fetch('/get_results')
+                .then(response => response.json())
+                .then(data => {
+                    finalAcuity.textContent = data.acuity || 'Unable to determine';
+                    
+                    // Show detailed results
+                    let details = '<h4>Test Details:</h4><ul>';
+                    data.responses.forEach((resp, index) => {
+                        let correctLetters = '';
+                        let acuity = '';
+                        
+                        // Get the line data from the predefined SNELLEN_LINES array
+                        const snellenLines = [
+                            ["E", 200],
+                            ["FP", 100],
+                            ["TOZ", 70],
+                            ["LPED", 50],
+                            ["PECFD", 40],
+                            ["EDFCZP", 30],
+                            ["FELOPZD", 25],
+                            ["DEFPOTEC", 20],
+                            ["FELOPZD", 15]
+                        ];
+                        
+                        if (resp.line_index >= 0 && resp.line_index < snellenLines.length) {
+                            correctLetters = snellenLines[resp.line_index][0];
+                            acuity = `20/${snellenLines[resp.line_index][1]}`;
+                        } else {
+                            correctLetters = 'Unknown';
+                            acuity = 'N/A';
+                        }
+                        
+                        details += `
+                            <li>
+                                <strong>${acuity}:</strong> "${resp.response}" 
+                                (${resp.is_correct ? '✓' : '✗'})
+                                ${!resp.is_correct ? `(Correct: ${correctLetters})` : ''}
+                            </li>`;
+                    });
+                    details += '</ul>';
+                    resultsDetails.innerHTML = details;
+                });
+        }
+        
+        function hideAllScreens() {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+        }
+        
+        function checkDistance() {
+            console.log('[DEBUG] checkDistance called');
+            const continueBtn = document.getElementById('continue-btn');
+            const distanceMessage = document.getElementById('distance-message');
+            
+            if (!continueBtn) {
+                console.error('Continue button not found!');
+                return;
+            }
+            if (!distanceMessage) {
+                console.error('Distance message element not found!');
+                return;
+            }
+            
+            console.log('[DEBUG] Enabling continue button');
+            continueBtn.disabled = false;
+            distanceMessage.textContent = 'Click Continue to start the test.';
+            distanceMessage.style.color = 'green';
+            
+            // Remove the interval since we don't need it anymore
+            if (window.distanceCheckInterval) {
+                clearInterval(window.distanceCheckInterval);
+                window.distanceCheckInterval = null;
+            }
+        }
+        
+        function loadNextLine() {
+            console.log(`[DEBUG] Loading line ${currentLine}`);
+            fetch(`/get_chart_line?line=${currentLine}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            console.error('Server error:', err);
+                            throw new Error(err.error || 'Failed to load chart line');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.test_complete) {
+                        showResults();
+                        return;
+                    }
+                    
+                    if (!data.success) {
+                        console.error('Error loading chart line:', data.error || 'Unknown error');
+                        showError('Failed to load the vision test. Please try again.');
+                        return;
+                    }
+                    
+                    // Show level information
+                    const levelInfo = document.getElementById('level-info');
+                    levelInfo.textContent = data.level_info || `Level ${data.current_level || 0}/${data.total_levels || 8}`;
+                    
+                    // Update progress bar
+                    const progressBar = document.getElementById('progress');
+                    const progressPercent = ((data.current_level - 1) / data.total_levels) * 100;
+                    progressBar.style.width = `${progressPercent}%`;
+                    
+                    // Show the current letter with appropriate size class
+                    snellenLine.className = '';  // Clear previous classes
+                    snellenLine.classList.add(`snellen-${data.acuity.split('/')[1]}`);
+                    snellenLine.textContent = data.letters;
+                    acuityDisplay.textContent = `20/${data.acuity.split('/')[1]}`;
+                    responseInput.value = '';
+                    resultMessage.textContent = '';
+                    responseInput.focus();
+                    
+                    // Update progress indicator
+                    const progress = document.getElementById('test-progress');
+                    if (progress) {
+                        progress.textContent = `Letter ${data.current_letter_index + 1} of ${data.total_letters}`;
+                    }
+                    
+                    // Show/hide skip button based on whether this is the last line
+                    skipBtn.style.display = data.is_last ? 'none' : 'inline-block';
+                })
+                .catch(error => {
+                    console.error('Error loading chart line:', error);
+                    showError('Failed to load the vision test. Please check your connection and try again.');
+                });
+        }
+        
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.style.color = 'red';
+            errorDiv.style.margin = '20px 0';
+            errorDiv.textContent = message;
+            
+            const container = document.querySelector('.container');
+            container.insertBefore(errorDiv, container.firstChild);
+            
+            // Scroll to the error message
+            errorDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showResults() {
+            hideAllScreens();
+            resultsScreen.classList.add('active');
+            
+            // Get results from server
+            fetch('/get_results')
+                .then(response => response.json())
+                .then(data => {
+                    finalAcuity.textContent = data.acuity || 'Unable to determine';
+                    
+                    // Show detailed results
+                    let details = '<h4>Test Details:</h4><ul>';
+                    data.responses.forEach((resp, index) => {
+                        let correctLetters = resp.letter || 'N/A';
+                        let acuity = resp.acuity || 'N/A';
+                        
+                        details += `
+                            <li>
+                                <strong>${acuity}:</strong> "${resp.response}" 
+                                (${resp.is_correct ? '✓' : '✗'})
+                                ${!resp.is_correct ? `(Correct: ${correctLetters})` : ''}
+                            </li>`;
+                    });
+                    details += '</ul>';
+                    resultsDetails.innerHTML = details;
+                });
+        }
+        
+
+function submitResponse() {
+    const response = responseInput.value.trim().toUpperCase();
+    if (!response) {
+        alert('Please enter the letter you see or click "I can\'t read this line"');
+        return;
+    }
+
+    fetch('/submit_response', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            line_index: currentLine,
+            response: response
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            console.error('Error submitting response:', data.error);
+            showError('Error submitting response. Please try again.');
+            return;
+        }
+
+        // Show feedback for the current letter
+        if (data.is_correct) {
+            resultMessage.innerHTML = '✅ Correct!';
+            resultMessage.className = 'result correct';
+        } else {
+            resultMessage.innerHTML = `❌ Incorrect. The correct letter was: <strong>${data.correct_letter}</strong>`;
+            resultMessage.className = 'result incorrect';
+        }
+
+        // Determine what to do next
+        setTimeout(() => {
+            if (data.test_complete) {
+                showResults();
+            } else if (data.move_to_next_letter) {
+                // Move to next letter in the same line
+                loadNextLine();
+            } else if (data.move_to_next_line) {
+                // Move to next line
+                currentLine++;
+                loadNextLine();
+            } else {
+                // Test is complete due to too many errors
+                showResults();
+            }
+        }, 500);
+    })
+    .catch(error => {
+        console.error('Error submitting response:', error);
+        showError('An error occurred. Please try again.');
+    });
+}
+
+function skipLine() {
+    // Submit an empty response to indicate the line couldn't be read
+    fetch('/submit_response', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            line_index: currentLine,
+            response: ''
+        })
+    })
+    .then(() => {
+        // Show results after skipping
+        showResults();
+    });
+}
+        
+function restartTest() {
+    // Reset test state on server
+    fetch('/start_test', { method: 'POST' })
+        .then(() => {
+            // Reset local state
+            currentLine = 0;
+            document.getElementById('response-input').value = '';
+            document.getElementById('result-message').textContent = '';
+            
+            // Show welcome screen to start over
+            showWelcomeScreen();
+        })
+        .catch(error => {
+            console.error('Error restarting test:', error);
+            showError('Error restarting test. Please refresh the page.');
+        });
+}
+
+        } // Close initApp function
+    </script>
+</body>
+</html>

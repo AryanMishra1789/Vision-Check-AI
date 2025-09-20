@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision Check AI</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Vision Check AI</h1>
+            <p class="subtitle">An accessible vision screening tool</p>
+        </header>
+
+        <div id="start-screen" class="screen">
+            <h2>Welcome to Vision Check AI</h2>
+            <p>This tool provides a preliminary vision screening using your device's camera.</p>
+            <div class="disclaimer">
+                <strong>Important:</strong> This is not a substitute for a professional eye exam. 
+                Please consult an eye care professional for a comprehensive examination.
+            </div>
+            <button id="start-btn" class="btn">Start Vision Test</button>
+        </div>
+
+        <div id="distance-screen" class="screen hidden">
+            <h2>Step 1: Position Yourself</h2>
+            <p>Please position yourself approximately 10 feet (3 meters) from your screen.</p>
+            <div class="video-container">
+                <video id="webcam" autoplay playsinline></video>
+                <canvas id="overlay"></canvas>
+            </div>
+            <p id="distance-message">Move closer or further until the circle turns green</p>
+            <button id="continue-btn" class="btn" disabled>Continue to Test</button>
+        </div>
+
+        <div id="test-screen" class="screen hidden">
+            <h2>Vision Test</h2>
+            <p>Read the letters from top to bottom, starting with the largest line.</p>
+            <div id="chart-container">
+                <div id="snellen-chart"></div>
+            </div>
+            <div class="input-container">
+                <input type="text" id="response-input" placeholder="Type what you see...">
+                <button id="submit-btn" class="btn">Submit</button>
+            </div>
+            <div id="result-message"></div>
+        </div>
+
+        <div id="results-screen" class="screen hidden">
+            <h2>Test Results</h2>
+            <div id="results-container"></div>
+            <p class="disclaimer">
+                <strong>Remember:</strong> This is only a screening tool. 
+                Please consult an eye care professional for a complete eye examination.
+            </p>
+            <button id="restart-btn" class="btn">Take Test Again</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
